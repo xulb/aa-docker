@@ -1,0 +1,140 @@
+#!/bin/bash
+
+print_help () {
+    echo Usage: 
+    echo \ aaserver -s [config name] [-v] 
+    echo \ aaserver -ngk [server name] [-v] 
+    echo \ aaserver -lL [-v]
+    echo -s, --start [config] : start single AA servers in Docker containers
+    echo -p, --port [port] : use port [port] for server
+    echo -n, --login [server name] : login to server container
+    echo  -l, --list-servers : list running servers
+    echo  -L, --list-configs : list available server configs
+    echo  -k, --kill [server name] : kill servers
+    echo -g, --log [server name] : get server logs
+    echo -v, --verbose : verbose mode
+}
+
+DOCKER="sudo docker"
+test ${COR_GAMES:=~/.local/share/cor-games}
+test ${GAME_DIRNAME:=arena}
+test ${AASERVER_IMAGE:=aa-server}
+
+GAME_DIR=$COR_GAMES/$GAME_DIRNAME
+GAME_DIR=${GAME_DIR//\/\//\/}
+
+list_running_servers_verbose () {
+    $DOCKER ps | sed -ne '1p;/aa-server/p' | sed -e 's/  \+/\t/g' | cut -f 1,5,6,7
+}
+
+list_running_servers () {
+    list_running_servers_verbose | sed -e '1d' | cut -f 4
+}
+
+pull_server_log () {
+    $DOCKER logs $1
+}
+
+list_available_configs () {
+    ls $GAME_DIR/*.cfg | { while read f ; do basename $f ; done ; }
+}
+
+start_server_on_port () {
+    CONFIG=$1
+    PORT=$2
+    if [ ! -e $GAME_DIR/$CONFIG ] ; 
+    then 
+	echo "No config file '$CONFIG' in $GAME_DIR. Stop."
+	exit 1
+    fi
+    if  echo $PORT | grep -qv '^[0-9]\+$'
+    then
+	echo "Port must be positive integer. Stop."
+	exit 1
+    fi
+    NAME=${CONFIG/.cfg/}
+    NAME=${NAME#server}
+    if list_running_servers | grep -q $NAME 
+    then
+	echo "Server '$NAME' is already running. Stop."
+	exit 1
+    fi
+    $DOCKER run -dt --name $NAME -p $PORT:$PORT/udp $AASERVER_IMAGE $CONFIG
+}
+
+attach_server () {
+    $DOCKER attach $1
+}
+
+stop_server () {
+    $DOCKER stop $1
+}
+
+restart_server () {
+    $DOCKER start $1
+}
+
+kill_server () {
+    $DOCKER kill $1
+}
+
+VERBOSE=
+SERVER=
+CONFIG=
+PORT=
+OPTSTR=hs:n:lLk:g:p:v
+LONGOPTSTR=help,start:,login:,list-servers,list-configs,kill:,logs:,verbose
+TEMP=`getopt -o $OPTSTR --long $LONGOPTSTR -- "$@"`
+if [ $? != 0 ] ; then print_help ; exit 2 ; fi
+
+if echo $TEMP | grep -q -- "-v" ; then VERBOSE=1 ; fi
+if echo $TEMP | grep -q -- "\--verbose" ; then VERBOSE=1 ; fi
+
+eval set -- "$TEMP"
+
+
+if [ $1 = '--' ] ; then print_help ; exit ; fi
+while true ; do
+    case "$1" in
+	-h|--help) print_help ; exit ;;
+	-v|--verbose) shift ;;
+	-s|--start) CONFIG=$2 ; SERVER_START=1 ; shift 2 ;;
+	-p|--port) PORT=$2 ; SERVER_START=1 ; shift 2 ;;
+	-n|--login) SERVER=$2 ; attach_server $SERVER ; break ;;
+	-l|--list-servers) 
+	    if [ $VERBOSE ] ;
+	    then list_running_servers_verbose ;
+	    else list_running_servers ; 
+	    fi ; break ;;
+	-L|--list-configs) list_available_configs ; break ;;
+	-g|--logs) SERVER=$2 ; pull_server_log $SERVER ; break ;;
+	-k|--kill) SERVER=$2 ; kill_server $SERVER ; shift ;;
+	--) shift ; break ;;
+	*) echo Option not recognized : $1 ; shift ;;
+    esac
+done
+
+if [ $SERVER_START ] 
+then
+    CONFIG_FILE=$GAME_DIR/$CONFIG
+    if [[ ! -a $CONFIG_FILE ]] 
+    then
+	CONFIG=$CONFIG.cfg
+	CONFIG_FILE=$CONFIG_FILE.cfg
+    fi
+    if [[ ! -a $CONFIG_FILE ]] 
+    then echo "Config '$CONFIG' not found. Stop." ; echo $CONFIG_FILE ; exit 1 
+    fi
+    
+    if [ -z $PORT ]
+    then 
+	PORT=$(grep "set port" $CONFIG_FILE | { read a b PORT ; echo $PORT ; })
+    fi
+    if echo $PORT | grep -v '^[0-9]\+$' 
+    then echo "Port '$PORT' not valid. Stop." ; exit 1 
+    fi
+    start_server_on_port $CONFIG $PORT
+fi
+    
+
+	    
