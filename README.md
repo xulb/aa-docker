@@ -4,7 +4,7 @@ Docker Tools for AA Server Management
 These are some tools for running [AlienArena](http://red.planetarena.org)
 servers in [Docker](http://www.docker.com) containers in Linux.
 
-# aasvr
+# aamgr
 
 Command-line tools to list running servers, list available server configs, 
 fetch server logs, and start/kill new servers on your machine.
