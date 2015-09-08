@@ -29,12 +29,14 @@ root       889     1  0 Aug29 ?        00:20:35 /usr/bin/docker daemon
 ```
 
 * Use docker/aa-server/Dockerfile to build your local AA image:
+
 ** Clone this repo into your home dir:
 ```
  $ cd
  $ git clone https://github.com/xulb/aa-docker.git
  $ cd aa-docker
 ```
+
 ** Move into the docker/aaserver directory, and *copy* your local AA stuff 
 into a new subdir called `codered` (copy is necessary; you can get rid of it
 later):
@@ -43,10 +45,12 @@ later):
  $ cd docker/aa-server
  $ cp -R ~/.local/share/cor-games codered
 ```
+
 ** Create the Docker image:
 ```
  $ sudo docker build -t aaserver .
 ```
+
 ** Try starting a server in a docker container:
 ```
  $ sudo docker run -dt -p 27900:27900/udp -p 27909:27909/udp \
