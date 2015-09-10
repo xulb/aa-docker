@@ -1,5 +1,5 @@
 # docker run -dt -p 27900:27900/udp -p 27909:27909/udp --name aa-server <config.cfg>
-FROM aatrunk:latest
+FROM xulb/aa-trunk:latest
 MAINTAINER xulb <xulb.aa@gmail.com>
 LABEL org.xulbia.docker="Xulb's AlienArena Trunk Server" version="0.01"
 EXPOSE 27900/udp 27901/udp 27902/udp 27903/udp 27904/udp 27905/udp

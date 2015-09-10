@@ -15,8 +15,12 @@ Dockerfiles for building a base server-only image on Ubuntu 14.04.
 
 _aa-trunk_ : Creates the alienarena-ded server from AlienArena [SVN](http://svn.icculus.org/alienarena).
 
+This image is available on [Docker Hub](https://hub.docker.com/r/xulb/aa-trunk).
+
 _aa-server_ : Creates an image based on _aa-trunk_, adding your game directory
-(`.local/share/cor-games`). This should contain all your 3rd party maps, `.nod` files, bot files and other goodies in the `arena` subdirectory.
+(`.local/share/cor-games`). This should contain all your 3rd party maps, `.nod` files, bot files and other goodies in the `arena` subdirectory. 
+The Dockerfile pulls the `xulb/aa-trunk` down from Docker Hub; you don't 
+have to create it yourself.
 
 # Using Docker for running your servers
 
@@ -38,8 +42,7 @@ root       889     1  0 Aug29 ?        00:20:35 /usr/bin/docker daemon
 ```
 
   * Move into the docker/aaserver directory, and *copy* your local AA stuff 
-into a new subdir called `codered` (copy is necessary; you can get rid of it
-later):
+into a new subdir called `codered` (copy is necessary; using a link won't work)
 ```
  # assuming your local maps, etc. are in standard .local/share/cor-games
  $ cd docker/aa-server
