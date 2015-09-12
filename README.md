@@ -72,8 +72,6 @@ Command-line tool to list running servers, list available server
 configs, fetch server logs, and start/kill new servers on your
 machine.
 
-```
-
 * `aamgr --start yourconfig.cfg` will search the config for the
   correct port and start the machine on that port
 
