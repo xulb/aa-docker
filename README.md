@@ -36,7 +36,7 @@ root       889     1  0 Aug29 ?        00:20:35 /usr/bin/docker daemon
  $ cd aa-docker
 ```
 
-  * Move into the docker/aaserver directory, and *copy* your local AA stuff 
+  * Move into the docker/aa-server directory, and *copy* your local AA stuff 
 into a new subdir called `codered` (copy is necessary; using a link won't work)
 ```
  # assuming your local maps, etc. are in standard .local/share/cor-games
@@ -47,7 +47,7 @@ into a new subdir called `codered` (copy is necessary; using a link won't work)
   * Create the Docker image:
 
 ```
- $ sudo docker build -t aaserver .
+ $ sudo docker build -t aa-server .
 ```
 
   * Try starting a server in a docker container:
