@@ -72,6 +72,20 @@ Command-line tool to list running servers, list available server
 configs, fetch server logs, and start/kill new servers on your
 machine.
 
+```
+Usage:
+ aamgr -s [config name] [-v]
+ aamgr -gk [server name] [-v]
+ aamgr -lL [-v]
+-s, --start [config] : start single AA servers in Docker containers
+-p, --port [port] : use port [port] for server
+-l, --list-servers : list running servers
+-L, --list-configs : list available server configs
+-k, --kill [server name] : kill server and remove container
+-g, --log [server name] : get server logs
+-v, --verbose : verbose mode
+```
+
 * `aamgr --start yourconfig.cfg` will search the config for the
   correct port and start the machine on that port
 
