@@ -4,12 +4,7 @@ Docker Tools for AA Server Management
 These are some tools for running [AlienArena](http://red.planetarena.org)
 servers in [Docker](http://www.docker.com) containers in Linux.
 
-# aamgr
-
-Command-line tools to list running servers, list available server configs, 
-fetch server logs, and start/kill new servers on your machine.
-
-# Docker image builders
+## Docker image builders
 
 Dockerfiles for building a base server-only image on Ubuntu 14.04.
 
@@ -50,14 +45,49 @@ into a new subdir called `codered` (copy is necessary; using a link won't work)
 ```
 
   * Create the Docker image:
+
 ```
  $ sudo docker build -t aaserver .
 ```
 
   * Try starting a server in a docker container:
+
 ```
  $ sudo docker run -dt -p 27900:27900/udp -p 27909:27909/udp \
-   --name myserver myconfig.cfg
+   --name myserver aa-server myconfig.cfg
 ```
 
+_Explanation_: This command runs a container called "myserver" using
+image `aa-server` that starts alienarena-ded execing myconfig.cfg. The
+host machine port 27909 is mapped the container port 27909 to allow
+players in. The port in the docker command must match the port set in
+the config file (the `set port [nnnnn]` line). Port 27900 is also
+exposed to the world, so that the server can communicate with the
+master server and show up on the [server
+browser](http://hal.nanoid.net/arena/tools/browser/).
+
+## aamgr
+
+Command-line tool to list running servers, list available server
+configs, fetch server logs, and start/kill new servers on your
+machine.
+
+```
+
+* `aamgr --start yourconfig.cfg` will search the config for the
+  correct port and start the machine on that port
+
+* `aamgr --list-configs` lists the config files that are present in
+  the container
+
+### aamgr Installation
+
+`aamgr` is a single bash shell script. Move it to a location on your
+PATH, e.g., `/usr/local/bin`. If it doesn't run, do
+
+```
+$ chmod a+x aamgr
+```
+
+on it.
 
