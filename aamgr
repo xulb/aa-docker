@@ -2,26 +2,26 @@
 
 print_help () {
     echo Usage: 
-    echo \ aaserver -s [config name] [-v] 
-    echo \ aaserver -ngk [server name] [-v] 
-    echo \ aaserver -lL [-v]
+    echo \ aamgr -s [config name] [-v] 
+    echo \ aamgr -gk [server name] [-v] 
+    echo \ aamgr -lL [-v]
     echo -s, --start [config] : start single AA servers in Docker containers
     echo -p, --port [port] : use port [port] for server
-    echo -n, --login [server name] : login to server container
     echo  -l, --list-servers : list running servers
     echo  -L, --list-configs : list available server configs
-    echo  -k, --kill [server name] : kill servers
+    echo  -k, --kill [server name] : kill server and remove container
     echo -g, --log [server name] : get server logs
     echo -v, --verbose : verbose mode
 }
 
 DOCKER="sudo docker"
-test ${COR_GAMES:=~/.local/share/cor-games}
+test ${SERVER_COR_GAMES:=/home/alien/.local/share/cor-games}
 test ${GAME_DIRNAME:=arena}
 test ${AASERVER_IMAGE:=aa-server}
 
-GAME_DIR=$COR_GAMES/$GAME_DIRNAME
+GAME_DIR=$SERVER_COR_GAMES/$GAME_DIRNAME
 GAME_DIR=${GAME_DIR//\/\//\/}
+SERVER_SHELL="$DOCKER run -t --name byebye --entrypoint /bin/bash $AASERVER_IMAGE -c "
 
 list_running_servers_verbose () {
     $DOCKER ps | sed -ne '1p;/aa-server/p' | sed -e 's/  \+/\t/g' | cut -f 1,5,6,7
@@ -36,22 +36,19 @@ pull_server_log () {
 }
 
 list_available_configs () {
-    ls $GAME_DIR/*.cfg | { while read f ; do basename $f ; done ; }
+    $SERVER_SHELL "ls -1 $GAME_DIR" | grep \.cfg 
+    $DOCKER rm byebye > /dev/null
+}
+
+cat_server_config () {
+    CONFIG=$1
+    $SERVER_SHELL "cat $GAME_DIR/$CONFIG"
+    $DOCKER rm byebye > /dev/null
 }
 
 start_server_on_port () {
     CONFIG=$1
     PORT=$2
-    if [ ! -e $GAME_DIR/$CONFIG ] ; 
-    then 
-	echo "No config file '$CONFIG' in $GAME_DIR. Stop."
-	exit 1
-    fi
-    if  echo $PORT | grep -qv '^[0-9]\+$'
-    then
-	echo "Port must be positive integer. Stop."
-	exit 1
-    fi
     NAME=${CONFIG/.cfg/}
     NAME=${NAME#server}
     if list_running_servers | grep -q $NAME 
@@ -62,9 +59,6 @@ start_server_on_port () {
     $DOCKER run -dt --name $NAME -p $PORT:$PORT/udp $AASERVER_IMAGE $CONFIG
 }
 
-attach_server () {
-    $DOCKER attach $1
-}
 
 stop_server () {
     $DOCKER stop $1
@@ -76,14 +70,11 @@ restart_server () {
 
 kill_server () {
     $DOCKER kill $1
+    $DOCKER rm $1
 }
 
-VERBOSE=
-SERVER=
-CONFIG=
-PORT=
-OPTSTR=hs:n:lLk:g:p:v
-LONGOPTSTR=help,start:,login:,list-servers,list-configs,kill:,logs:,verbose
+OPTSTR=hs:lLk:g:p:v
+LONGOPTSTR=help,start:,list-servers,list-configs,kill:,logs:,verbose
 TEMP=`getopt -o $OPTSTR --long $LONGOPTSTR -- "$@"`
 if [ $? != 0 ] ; then print_help ; exit 2 ; fi
 
@@ -92,7 +83,6 @@ if echo $TEMP | grep -q -- "\--verbose" ; then VERBOSE=1 ; fi
 
 eval set -- "$TEMP"
 
-
 if [ $1 = '--' ] ; then print_help ; exit ; fi
 while true ; do
     case "$1" in
@@ -100,15 +90,14 @@ while true ; do
 	-v|--verbose) shift ;;
 	-s|--start) CONFIG=$2 ; SERVER_START=1 ; shift 2 ;;
 	-p|--port) PORT=$2 ; SERVER_START=1 ; shift 2 ;;
-	-n|--login) SERVER=$2 ; attach_server $SERVER ; break ;;
 	-l|--list-servers) 
 	    if [ $VERBOSE ] ;
 	    then list_running_servers_verbose ;
 	    else list_running_servers ; 
 	    fi ; break ;;
 	-L|--list-configs) list_available_configs ; break ;;
-	-g|--logs) SERVER=$2 ; pull_server_log $SERVER ; break ;;
-	-k|--kill) SERVER=$2 ; kill_server $SERVER ; shift ;;
+	-g|--logs) SERVER=$2 ; pull_server_log $SERVER ; shift 2 ; break ;;
+	-k|--kill) SERVER=$2 ; kill_server $SERVER ; shift 2 ;;
 	--) shift ; break ;;
 	*) echo Option not recognized : $1 ; shift ;;
     esac
@@ -116,24 +105,29 @@ done
 
 if [ $SERVER_START ] 
 then
-    CONFIG_FILE=$GAME_DIR/$CONFIG
-    if [[ ! -a $CONFIG_FILE ]] 
+    if [[ ! $CONFIG =~ \.cfg$ ]]
     then
 	CONFIG=$CONFIG.cfg
-	CONFIG_FILE=$CONFIG_FILE.cfg
     fi
-    if [[ ! -a $CONFIG_FILE ]] 
-    then echo "Config '$CONFIG' not found. Stop." ; echo $CONFIG_FILE ; exit 1 
+    if [[ ! $(list_available_configs) =~ $CONFIG ]]
+    then 
+	echo "Config '$CONFIG' not available. Stop." 
+	exit 1 
     fi
     
     if [ -z $PORT ]
     then 
-	PORT=$(grep "set port" $CONFIG_FILE | { read a b PORT ; echo $PORT ; })
+       PORT=$(cat_server_config $CONFIG | grep "set port" | cut -d" " -f 3 | \
+	   sed -e 's/\([0-9]*\).*/\1/')
     fi
-    if echo $PORT | grep -v '^[0-9]\+$' 
-    then echo "Port '$PORT' not valid. Stop." ; exit 1 
+    if [[ $PORT =~ ^[0-9]+$ ]]
+    then
+	start_server_on_port $CONFIG $PORT
+	echo "Started $CONFIG on port $PORT"
+    else
+	echo "Port $PORT not valid. Stop." ; 
+	exit 1 
     fi
-    start_server_on_port $CONFIG $PORT
 fi
     
 
