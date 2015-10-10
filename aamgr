@@ -5,6 +5,7 @@ print_help () {
     echo \ aamgr -s [config name] [-v] 
     echo \ aamgr -gk [server name] [-v] 
     echo \ aamgr -lL [-v]
+    echo -R, --restart-all : restart all servers
     echo -s, --start [config] : start single AA servers in Docker containers
     echo -p, --port [port] : use port [port] for server
     echo  -l, --list-servers : list running servers
@@ -65,7 +66,15 @@ stop_server () {
 }
 
 restart_server () {
-    $DOCKER start $1
+    $DOCKER restart $1
+}
+
+restart_all () {
+    SVRS=`list_running_servers`
+    for i in $SVRS 
+    do
+	restart_server $i
+    done
 }
 
 kill_server () {
@@ -73,8 +82,8 @@ kill_server () {
     $DOCKER rm $1
 }
 
-OPTSTR=hs:lLk:g:p:v
-LONGOPTSTR=help,start:,list-servers,list-configs,kill:,logs:,verbose
+OPTSTR=Rhs:lLk:g:p:v
+LONGOPTSTR=help,start:,list-servers,list-configs,kill:,logs:,verbose,restart-all
 TEMP=`getopt -o $OPTSTR --long $LONGOPTSTR -- "$@"`
 if [ $? != 0 ] ; then print_help ; exit 2 ; fi
 
@@ -98,6 +107,7 @@ while true ; do
 	-L|--list-configs) list_available_configs ; break ;;
 	-g|--logs) SERVER=$2 ; pull_server_log $SERVER ; shift 2 ; break ;;
 	-k|--kill) SERVER=$2 ; kill_server $SERVER ; shift 2 ;;
+	-R|--restart-all) restart_all ; shift ;;
 	--) shift ; break ;;
 	*) echo Option not recognized : $1 ; shift ;;
     esac
