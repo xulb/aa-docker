@@ -1,6 +1,8 @@
-FROM ubuntu:14.04
+# xulb/aa-base3
+FROM ubuntu:16.04
 MAINTAINER xulb <xulb.aa@gmail.com>
-LABEL org.xulbia.docker="Xulb's AlienArena Trunk Build" version="0.01"
+LABEL org.xulbia.docker="Xulb's AlienArena Trunk Build" version="3.0"
+ENV DEBIAN_FRONTEND noninteractive
 ENV AATrunk=svn://svn.icculus.org/alienarena/trunk
 RUN apt-get update
 RUN apt-get install -y \

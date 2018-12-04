@@ -18,7 +18,7 @@ print_help () {
 DOCKER="sudo docker"
 test ${SERVER_COR_GAMES:=/home/alien/.local/share/cor-games}
 test ${GAME_DIRNAME:=arena}
-test ${AASERVER_IMAGE:=aa-server}
+test ${AASERVER_IMAGE:=xulb/aa-server3}
 
 GAME_DIR=$SERVER_COR_GAMES/$GAME_DIRNAME
 GAME_DIR=${GAME_DIR//\/\//\/}
@@ -51,7 +51,6 @@ start_server_on_port () {
     CONFIG=$1
     PORT=$2
     NAME=${CONFIG/.cfg/}
-    NAME=${NAME#server}
     if list_running_servers | grep -q $NAME 
     then
 	echo "Server '$NAME' is already running. Stop."
